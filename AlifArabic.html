@@ -555,6 +555,11 @@ function renderQuestion() {
       const map = {"&amp;":"&","&lt;":"<","&gt;":">","&quot;":"\"","&#039;":"'"};
       return String(str).replace(/(&amp;|&lt;|&gt;|&quot;|&#039;)/g, s => map[s]);
     }
+	if ("serviceWorker" in navigator) {
+		navigator.serviceWorker.register("service-worker.js")
+		.then(() => console.log("Service Worker registered"))
+		.catch(err => console.log("SW registration failed:", err));
+	}
   </script>
 </body>
 </html>
