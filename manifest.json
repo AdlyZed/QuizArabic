@@ -1,0 +1,20 @@
+{
+  "name": "Alif Arabic",
+  "short_name": "AlifArabic",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4a148c",
+  "icons": [
+    {
+      "src": "alif-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "alif-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
