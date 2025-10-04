@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Arabic Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="alif-icon.png">
+  <style>
+    :root {
+      --bg: #0b0b0f;
+      --card: #161625;
+      --accent: #7a3cff;
+      --accent-2: #9b6cff;
+      --text: #e9e7ff;
+      --muted: #cfc7ff;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 10% 0%, rgba(122,60,255,0.12), transparent 60%), var(--bg);
+      color: var(--text);
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 20px;
+    }
+    h2 { text-align: center; color: var(--accent-2); margin: 10px 0 16px; }
+    .screen { display: none; width: 100%; max-width: 640px; }
+    .screen.active { display: block; }
+    .card {
+      background: linear-gradient(180deg, #1b1b30 0%, #121222 100%);
+      border: 1px solid #26264a;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(122,60,255,0.14);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 520px) { .row { grid-template-columns: 1fr 1fr; } }
+    .btn {
+      width: 100%; padding: 12px 14px; border: 1px solid #26264a; border-radius: 12px;
+      background: #121222; color: var(--text); cursor: pointer;
+      transition: transform 0.15s ease, background 0.25s ease, border-color 0.25s ease;
+    }
+    .btn:hover { transform: translateY(-2px); background: #191936; border-color: var(--accent); }
+    .pill {
+      display: inline-block; border: 1px solid #26264a; border-radius: 999px;
+      padding: 6px 10px; background: #121222; color: var(--muted); font-size: 0.85rem;
+    }
+    .status { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    .prompt { text-align: center; color: var(--muted); }
+    .arabic { font-size: 1.6rem; font-weight: 700; text-align: center; margin: 8px 0 6px; }
+    .translit { font-size: 0.95rem; color: #cbbaff; text-align: center; margin-bottom: 12px; }
+    .options { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 520px) { .options { grid-template-columns: 1fr 1fr; } }
+    .option-card {
+      background: #141427; border: 1px solid #24244a; border-radius: 12px;
+      padding: 12px 14px; color: var(--text); cursor: pointer; user-select: none;
+      transition: transform 0.15s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .option-card:hover { transform: translateY(-2px); background: #181836; box-shadow: 0 6px 16px rgba(122,60,255,0.18); }
+    .option-card.correct {
+      background: #0f2b1b; border-color: var(--green);
+      box-shadow: 0 0 0 2px rgba(34,197,94,0.28) inset;
+      animation: pulse 600ms ease;
+    }
+    .option-card.wrong {
+      background: #2b0f0f; border-color: var(--red);
+      box-shadow: 0 0 0 2px rgba(239,68,68,0.28) inset;
+      animation: shake 380ms ease;
+    }
+    .options.disabled .option-card { pointer-events: none; opacity: 0.96; }
+    .hint { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 6px; }
+    .loading { text-align: center; color: var(--muted); }
+    .error { text-align: center; color: #ff9a9a; }
+
+    @keyframes pulse { 0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)} }
+    @keyframes shake {
+      0%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}
+      60%{transform:translateX(-3px)}80%{transform:translateX(3px)}100%{transform:translateX(0)}
+    }
+  </style>
+</head>
+<body>
+  <!-- Level selection -->
+  <div id="level-screen" class="screen active">
+    <div class="card">
+      <h2>Choose level</h2>
+      <div class="row">
+        <button class="btn" onclick="chooseLevel(1)">Level 1: Vocabulary</button>
+        <button class="btn" onclick="chooseLevel(2)">Level 2: Sentences</button>
+      </div>
+      <div class="status">
+        <span class="pill" id="net-status">Network: checking…</span>
+        <button class="pill" onclick="refreshContent()">Refresh content</button>
+      </div>
+      <p class="hint">Tip: Set your dataSourceUrl to a hosted JSON to get fresh words and sentences.</p>
+    </div>
+  </div>
+
+  <!-- Category selection -->
+  <div id="category-screen" class="screen">
+    <div class="card">
+      <h2>Choose category</h2>
+      <div class="row">
+        <button class="btn" onclick="chooseCategory('foods')">Foods</button>
+        <button class="btn" onclick="chooseCategory('activities')">Activities</button>
+        <button class="btn" onclick="chooseCategory('places')">Places</button>
+        <button class="btn" onclick="chooseCategory('objects')">Objects</button>
+        <button class="btn" onclick="chooseCategory('random')">Random mix</button>
+      </div>
+      <div class="status">
+        <span class="pill" id="seed-count">Loaded items: 0</span>
+        <span class="pill" id="new-count">New items: 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quiz -->
+  <div id="quiz-screen" class="screen">
+    <div class="card">
+      <h2 id="quiz-title">Quiz</h2>
+      <div id="quiz"></div>
+      <div class="status">
+        <span class="pill" id="progress">Question 1 / 20</span>
+        <span class="pill" id="score-pill">✅ 0 | ❌ 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Round-up -->
+  <div id="roundup-screen" class="screen">
+    <div class="card">
+      <h2>Round up</h2>
+      <p id="roundup-summary" style="text-align:center;"></p>
+      <div class="row">
+        <button class="btn" onclick="continueSame()">Continue same</button>
+        <button class="btn" onclick="showScreen('category-screen')">Pick category</button>
+        <button class="btn" onclick="showScreen('level-screen')">Pick level</button>
+        <button class="btn" onclick="quit()">Quit</button>
+      </div>
+      <p class="hint">You can refresh content on the Level screen to fetch new words and sentences.</p>
+    </div>
+  </div>
+
+  <script>
+    const dataSourceUrl = "https://AdlyZed.github.io/QuizArabic/arabic_quiz_data.json";
+
+    // Local seed fallback (works offline) — keeps the app running even without internet.
+    const seedVocab = {
+      foods: [
+        { ar:"خُبز", en:"Bread", translit:"khubz" },
+        { ar:"لَحم", en:"Meat", translit:"laḥm" },
+        { ar:"أرز", en:"Rice", translit:"ʾaruzz" },
+        { ar:"ماء", en:"Water", translit:"māʾ" }
+      ],
+      activities: [
+        { ar:"يَقرَأ", en:"Reading", translit:"yaqraʾ" },
+        { ar:"يَسبَح", en:"Swimming", translit:"yasbaḥ" },
+        { ar:"يَضحَك", en:"Laughing", translit:"yaḍḥak" },
+        { ar:"يَركُب", en:"Riding", translit:"yarkub" }
+      ],
+      places: [
+        { ar:"مَدرَسَة", en:"School", translit:"mad-ra-sa" },
+        { ar:"مَسجِد", en:"Mosque", translit:"masjid" },
+        { ar:"سوق", en:"Market", translit:"sūq" },
+        { ar:"بَيت", en:"House", translit:"bayt" }
+      ],
+      objects: [
+        { ar:"شَمس", en:"Sun", translit:"shams" },
+        { ar:"قَمر", en:"Moon", translit:"qamar" },
+        { ar:"شَجَرة", en:"Tree", translit:"shajara" },
+        { ar:"قَلب", en:"Heart", translit:"qalb" }
+      ]
+    };
+    const seedSentences = [
+      { ar:"أنا أقرأ كتابًا", en:"I am reading a book", translit:"anā aqraʾ kitāban" },
+      { ar:"هو يسبح في البحر", en:"He is swimming in the sea", translit:"huwa yasbaḥ fī al-baḥr" },
+      { ar:"نحن في المدرسة", en:"We are at school", translit:"naḥnu fī al-madrasah" },
+      { ar:"هي تأكل الخبز", en:"She is eating bread", translit:"hiya taʾkul al-khubz" }
+    ];
+
+    // App state
+    let netAvailable = false;
+    let store = { vocab: seedVocab, sentences: seedSentences }; // merged data
+    let currentLevel = 1;
+    let currentCategory = null;
+    let roundIndex = 0;
+    let correct = 0;
+    let wrong = 0;
+    const roundSize = 20;
+    let currentPool = []; // questions for this round
+
+    // Local storage keys
+    const LS_CONTENT = "arabic_quiz_content_v1";
+    const LS_SEEN = "arabic_quiz_seen_v1";
+
+    // Seen tracking to avoid repeats
+    let seenSet = new Set();
+
+    // Init
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Load cached content
+      try {
+        const cached = JSON.parse(localStorage.getItem(LS_CONTENT));
+        if (cached && cached.vocab && cached.sentences) {
+          store = cached;
+        }
+      } catch {}
+      // Load seen
+      try {
+        const seenArr = JSON.parse(localStorage.getItem(LS_SEEN));
+        if (Array.isArray(seenArr)) seenSet = new Set(seenArr);
+      } catch {}
+
+      await tryFetchContent();
+      updateCounts();
+      updateNetStatus();
+    });
+
+    async function tryFetchContent() {
+      if (!dataSourceUrl) return;
+      setNetStatus("Network: loading…");
+      try {
+        const res = await fetch(dataSourceUrl, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const json = await res.json();
+        // Expected schema:
+        // {
+        //   "vocab": { "foods":[{ar,en,translit},...], "activities":[...], "places":[...], "objects":[...] },
+        //   "sentences": [{ar,en,translit}, ...]
+        // }
+        if (json && json.vocab && json.sentences) {
+          // Merge: internet items first, then seeds
+          store = {
+            vocab: {
+              foods: mergeUnique(json.vocab.foods || [], seedVocab.foods),
+              activities: mergeUnique(json.vocab.activities || [], seedVocab.activities),
+              places: mergeUnique(json.vocab.places || [], seedVocab.places),
+              objects: mergeUnique(json.vocab.objects || [], seedVocab.objects)
+            },
+            sentences: mergeUnique(json.sentences || [], seedSentences)
+          };
+          localStorage.setItem(LS_CONTENT, JSON.stringify(store));
+          netAvailable = true;
+        } else {
+          netAvailable = false;
+        }
+      } catch (e) {
+        netAvailable = false;
+      }
+    }
+
+    function mergeUnique(primary, fallback) {
+      const key = (x) => `${x.ar}::${x.en}`;
+      const map = new Map();
+      [...primary, ...fallback].forEach(x => {
+        if (!x || !x.ar || !x.en) return;
+        map.set(key(x), x);
+      });
+      return Array.from(map.values());
+    }
+
+    function refreshContent() {
+      tryFetchContent().then(() => {
+        updateCounts();
+        updateNetStatus();
+        alert(netAvailable ? "Content refreshed from internet." : "Could not fetch. Using local data.");
+      });
+    }
+
+    function updateCounts() {
+      const seedCount = (
+        store.vocab.foods.length +
+        store.vocab.activities.length +
+        store.vocab.places.length +
+        store.vocab.objects.length +
+        store.sentences.length
+      );
+      const newCount = seedCount - (
+        seedVocab.foods.length +
+        seedVocab.activities.length +
+        seedVocab.places.length +
+        seedVocab.objects.length +
+        seedSentences.length
+      );
+      document.getElementById("seed-count").textContent = `Loaded items: ${seedCount}`;
+      document.getElementById("new-count").textContent = `New items: ${Math.max(0, newCount)}`;
+    }
+
+    function setNetStatus(text) {
+      document.getElementById("net-status").textContent = text;
+    }
+    function updateNetStatus() {
+      setNetStatus(netAvailable ? "Network: online content loaded" : "Network: offline or no source");
+    }
+
+    // Navigation
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function chooseLevel(level) {
+      currentLevel = level;
+      if (level === 1) {
+        showScreen('category-screen');
+      } else {
+        currentCategory = null;
+        startRound();
+      }
+    }
+    function chooseCategory(cat) {
+      currentCategory = cat;
+      startRound();
+    }
+    function startRound() {
+      correct = 0; wrong = 0; roundIndex = 0;
+      buildPool();
+      document.getElementById("quiz-title").textContent = currentLevel === 1
+        ? `Vocabulary — ${currentCategory === 'random' ? 'Random mix' : capitalize(currentCategory)}`
+        : "Sentences";
+      showScreen('quiz-screen');
+      renderQuestion();
+      updateStatus();
+    }
+
+    function buildPool() {
+      const pool = [];
+      if (currentLevel === 1) {
+        let source = [];
+        if (currentCategory === 'random' || !currentCategory) {
+          source = [
+            ...store.vocab.foods.map(x => ({...x, cat:'foods'})),
+            ...store.vocab.activities.map(x => ({...x, cat:'activities'})),
+            ...store.vocab.places.map(x => ({...x, cat:'places'})),
+            ...store.vocab.objects.map(x => ({...x, cat:'objects'}))
+          ];
+        } else {
+          source = store.vocab[currentCategory].map(x => ({...x, cat: currentCategory}));
+        }
+        // Prioritize unseen
+        const unseen = source.filter(x => !seenSet.has(keyItem(x)));
+        const seen = source.filter(x => seenSet.has(keyItem(x)));
+        pool.push(...shuffle(unseen), ...shuffle(seen));
+      } else {
+        const sentences = store.sentences.slice();
+        const unseen = sentences.filter(x => !seenSet.has(keyItem(x)));
+        const seen = sentences.filter(x => seenSet.has(keyItem(x)));
+        pool.push(...shuffle(unseen), ...shuffle(seen));
+      }
+      // If pool too small, repeat shuffled to reach roundSize
+      currentPool = [];
+      while (currentPool.length < roundSize) {
+        currentPool.push(...shuffle(pool));
+        if (pool.length === 0) break;
+      }
+      currentPool = currentPool.slice(0, roundSize);
+    }
+
+function renderQuestion() {
+  const q = currentPool[roundIndex];
+  if (!q) return;
+  const quizDiv = document.getElementById('quiz');
+  const direction = Math.random() < 0.5 ? "normal" : "reverse";
+
+  let promptHtml = "";
+  let correctText = "";
+  let distractors = [];
+
+  if (currentLevel === 1) {
+    if (direction === "normal") {
+      promptHtml = `<div class="prompt">What does this word mean?</div>
+                    <div class="arabic">${q.ar}</div>
+                    <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
+      correctText = q.en;
+      distractors = makeDistractors("en", q.en, q.cat);
+    } else {
+      promptHtml = `<div class="prompt">Choose the correct Arabic for:</div>
+                    <div class="arabic" style="font-size:1.2rem;">${q.en}</div>`;
+      correctText = q.ar;
+      distractors = makeDistractors("ar", q.ar, q.cat);
+    }
+  } else {
+    if (direction === "normal") {
+      promptHtml = `<div class="prompt">What does this sentence mean?</div>
+                    <div class="arabic">${q.ar}</div>
+                    <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
+      correctText = q.en;
+      distractors = makeSentenceDistractors("en", q.en);
+    } else {
+      promptHtml = `<div class="prompt">Choose the correct Arabic sentence for:</div>
+                    <div class="arabic" style="font-size:1.2rem;">${q.en}</div>`;
+      correctText = q.ar;
+      distractors = makeSentenceDistractors("ar", q.ar);
+    }
+  }
+
+  const options = makeOptions(correctText, distractors);
+
+  quizDiv.innerHTML = `
+    ${promptHtml}
+    <div class="options" id="options-wrap">
+      ${options.map(opt => `<div class="option-card" data-value="${escapeHtml(opt)}">${escapeHtml(opt)}</div>`).join('')}
+    </div>
+  `;
+
+  // Attach listeners safely
+  document.querySelectorAll('#options-wrap .option-card').forEach(card => {
+    card.addEventListener('click', () => {
+      checkAnswer(card, card.dataset.value, correctText);
+    });
+  });
+}
+
+
+    function checkAnswer(card, chosenEsc, correctEsc) {
+      const chosen = unescapeHtml(chosenEsc);
+      const correctText = unescapeHtml(correctEsc);
+      const optionsWrap = document.getElementById('options-wrap');
+      const cards = Array.from(optionsWrap.querySelectorAll('.option-card'));
+      optionsWrap.classList.add('disabled');
+
+      if (chosen === correctText) {
+        card.classList.add('correct');
+        correct++;
+      } else {
+        card.classList.add('wrong');
+        const correctCard = cards.find(c => c.textContent === correctText);
+        if (correctCard) correctCard.classList.add('correct');
+        wrong++;
+      }
+
+      // Mark seen
+      const q = currentPool[roundIndex];
+      if (q) {
+        seenSet.add(keyItem(q));
+        localStorage.setItem(LS_SEEN, JSON.stringify(Array.from(seenSet)));
+      }
+
+      setTimeout(() => {
+        roundIndex++;
+        if (roundIndex >= roundSize) {
+          showRoundup();
+        } else {
+          renderQuestion();
+          updateStatus();
+        }
+      }, 900);
+    }
+
+    function updateStatus() {
+      document.getElementById("progress").textContent = `Question ${roundIndex + 1} / ${roundSize}`;
+      document.getElementById("score-pill").textContent = `✅ ${correct} | ❌ ${wrong}`;
+    }
+
+    function showRoundup() {
+      showScreen('roundup-screen');
+      document.getElementById("roundup-summary").textContent = `Correct: ${correct} | Wrong: ${wrong}`;
+    }
+
+    function continueSame() {
+      startRound();
+    }
+    function quit() {
+      // Simple quit: back to Level screen (you can close the tab manually if needed)
+      showScreen('level-screen');
+    }
+
+    // Helpers
+	function makeOptions(correct, pool, count = 4) {
+		const filtered = pool.filter(x => x && x !== correct);
+		const picks = shuffle(filtered).slice(0, count - 1);
+		const all = [correct, ...picks];
+	return shuffle(all);
+}
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+    function keyItem(x) { return `${x.ar || ''}::${x.en || ''}`; }
+
+    // Distractors for vocab — choose from same category when possible, else cross-category
+    function makeDistractors(field, correct, cat) {
+      const source = [
+        ...(store.vocab[cat] || []),
+        ...store.vocab.foods, ...store.vocab.activities, ...store.vocab.places, ...store.vocab.objects
+      ];
+      const pool = source.map(x => field === "en" ? x.en : x.ar).filter(v => v && v !== correct);
+      return uniqueSample(pool, 6);
+    }
+    // Distractors for sentences — mix across all sentences, then fallback to simple templates
+    function makeSentenceDistractors(field, correct) {
+      const base = store.sentences.map(x => field === "en" ? x.en : x.ar).filter(v => v && v !== correct);
+      const basePick = uniqueSample(base, 6);
+      if (basePick.length >= 3) return basePick.slice(0, 3);
+      // Fallback simple templates (avoid duplicate correct)
+      const extrasEn = [
+        "I am eating bread", "He is running fast", "We are at the market", "She is reading a book"
+      ].filter(v => v !== correct);
+      const extrasAr = [
+        "أنا آكل خبزًا", "هو يركض بسرعة", "نحن في السوق", "هي تقرأ كتابًا"
+      ].filter(v => v !== correct);
+      const extras = field === "en" ? extrasEn : extrasAr;
+      return [...basePick, ...uniqueSample(extras, 3 - basePick.length)];
+    }
+    function uniqueSample(arr, n) {
+      const s = shuffle(Array.from(new Set(arr)));
+      return s.slice(0, n);
+    }
+
+    // Safe HTML for options
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+    function unescapeHtml(str) {
+      const map = {"&amp;":"&","&lt;":"<","&gt;":">","&quot;":"\"","&#039;":"'"};
+      return String(str).replace(/(&amp;|&lt;|&gt;|&quot;|&#039;)/g, s => map[s]);
+    }
+  </script>
+</body>
+</html>
