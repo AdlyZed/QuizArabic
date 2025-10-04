@@ -3,7 +3,7 @@ const urlsToCache = [
   "/",
   "/index.html",
   "/manifest.json",
-  "/favicon.png"
+  "/alif-icon.png"
   // add CSS, JS, JSON data files here
 ];
 
@@ -18,3 +18,4 @@ self.addEventListener("fetch", event => {
     caches.match(event.request).then(response => response || fetch(event.request))
   );
 });
+
