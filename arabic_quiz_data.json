@@ -1,0 +1,30 @@
+{
+  "vocab": {
+    "foods": [
+      { "ar": "تفاح", "en": "Apple", "translit": "tuffāḥ" },
+      { "ar": "حليب", "en": "Milk", "translit": "ḥalīb" },
+      { "ar": "جبن", "en": "Cheese", "translit": "jubn" }
+    ],
+    "activities": [
+      { "ar": "يكتب", "en": "Writing", "translit": "yaktub" },
+      { "ar": "يجري", "en": "Running", "translit": "yajri" },
+      { "ar": "يبكي", "en": "Crying", "translit": "yabkī" }
+    ],
+    "places": [
+      { "ar": "مكتبة", "en": "Library", "translit": "maktaba" },
+      { "ar": "حديقة", "en": "Park", "translit": "ḥadīqah" },
+      { "ar": "مطار", "en": "Airport", "translit": "maṭār" }
+    ],
+    "objects": [
+      { "ar": "كتاب", "en": "Book", "translit": "kitāb" },
+      { "ar": "قلم", "en": "Pen", "translit": "qalam" },
+      { "ar": "شجرة", "en": "Tree", "translit": "shajarah" }
+    ]
+  },
+  "sentences": [
+    { "ar": "أنا آكل تفاحًا", "en": "I am eating an apple", "translit": "anā ākulu tuffāḥan" },
+    { "ar": "هي تكتب رسالة", "en": "She is writing a letter", "translit": "hiya taktubu risālah" },
+    { "ar": "نحن في المكتبة", "en": "We are in the library", "translit": "naḥnu fī al-maktabah" },
+    { "ar": "هو يجري في الحديقة", "en": "He is running in the park", "translit": "huwa yajri fī al-ḥadīqah" }
+  ]
+}
