@@ -7,6 +7,8 @@
   <link rel="icon" type="image/png" href="alif-icon.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4a148c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
     :root {
       --bg: #0b0b0f;
@@ -19,6 +21,15 @@
       --red: #ef4444;
     }
     * { box-sizing: border-box; }
+	html, body {
+	  height: 100%;
+	  width: 100%;
+	  margin: 0;
+	  padding: 0;
+	  background-color: var(--bg); /* fallback solid */
+	  background: radial-gradient(1200px 600px at 10% 0%, rgba(122,60,255,0.12), transparent 60%), var(--bg);
+	  background-attachment: fixed;
+	}
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -88,6 +99,15 @@
      color: var(--muted);
      margin-top: 10px;
     font-style: italic;
+	}
+	@media (max-width: 640px) {
+  .screen {
+    max-width: 100%;   /* stretch to full width */
+  }
+  .card {
+    border-radius: 0;  /* optional: remove rounded corners */
+    min-height: 100vh; /* card fills screen height */
+  }
 }
   </style>
 </head>
