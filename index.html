@@ -138,6 +138,7 @@
         <button class="btn" onclick="chooseCategory('places')">Places</button>
         <button class="btn" onclick="chooseCategory('objects')">Objects</button>
 		<button class="btn" onclick="chooseCategory('bodyparts')">Body Parts</button>
+		<button class="btn" onclick="chooseCategory('vehicles')">Vehicles</button>
         <button class="btn" onclick="chooseCategory('random')">Random mix</button>
       </div>
       <div class="status">
@@ -228,7 +229,17 @@
 		  { ar:"رجل", en:"Leg", translit:"rijl" },
 		  { ar:"قدم", en:"Foot", translit:"qadam" },
 		  { ar:"قلب", en:"Heart", translit:"qalb" }
-	  ]
+	  ],
+		vehicles: [
+		  { ar:"سَيّارة", en:"Car", translit:"sayyārah" },
+		  { ar:"دَرّاجة ناريّة", en:"Motorcycle", translit:"darrājah nāriyyah" },
+		  { ar:"دَرّاجة", en:"Bicycle", translit:"darrājah" },
+		  { ar:"شاحِنة", en:"Lorry / Truck", translit:"shāḥinah" },
+		  { ar:"عَبّارة", en:"Ferry", translit:"ʿabbārah" },
+		  { ar:"طائِرة", en:"Airplane", translit:"ṭāʾirah" },
+		  { ar:"مِروحيّة", en:"Helicopter", translit:"mirwaḥiyyah" },
+		  { ar:"قِطار", en:"Train", translit:"qiṭār" }
+		]
     };
     const seedSentences = [
       { ar:"أنا أقرأ كتابًا", en:"I am reading a book", translit:"anā aqraʾ kitāban" },
@@ -296,6 +307,7 @@
 			  places: mergeUnique(json.vocab.places || [], seedVocab.places),
 			  objects: mergeUnique(json.vocab.objects || [], seedVocab.objects),
 			  bodyparts: mergeUnique(json.vocab.bodyparts || [], seedVocab.bodyparts)
+		  	  vehicles: mergeUnique(json.vocab.vehicles || [], seedVocab.vehicles)
 		    },
 		    sentences: mergeUnique(json.sentences || [], seedSentences)
 		  };
@@ -630,5 +642,6 @@ function renderQuestion() {
 		</div>
 	</body>
 </html>
+
 
 
