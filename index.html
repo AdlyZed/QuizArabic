@@ -181,8 +181,12 @@
   <!-- Review Learned Words -->
   <div id="review-screen" class="screen">
     <div class="card">
-      <h2>Learned Words</h2>
-      <div id="review-list"></div>
+      <h2>Review Learned Words</h2>
+      <div class="row">
+        <button class="btn" onclick="showReviewCategory('vocab')">📘 Words</button>
+        <button class="btn" onclick="showReviewCategory('sentences')">📝 Sentences</button>
+      </div>
+      <div id="review-list" style="margin-top:12px;"></div>
       <div class="row">
         <button class="btn" onclick="showScreen('level-screen')">⬅ Back to Levels</button>
       </div>
@@ -583,20 +587,38 @@ function renderQuestion() {
       showScreen('level-screen');
     }
 	function showReview() {
+	  // Just open the review screen, let user pick category
+	  document.getElementById("review-list").innerHTML = 
+		"<p class='hint'>Choose Words or Sentences above.</p>";
+	  showScreen("review-screen");
+	}
+	function showReviewCategory(type) {
 	  const listDiv = document.getElementById("review-list");
 	  listDiv.innerHTML = "";
 
 	  if (seenSet.size === 0) {
 		listDiv.innerHTML = "<p class='hint'>No words learned yet.</p>";
-	  } else {
-		const items = Array.from(seenSet).map(key => {
-		  const [ar, en] = key.split("::");
-		  return `<div class="option-card"><b>${ar}</b> — ${en}</div>`;
-		});
-		listDiv.innerHTML = items.join("");
+		return;
 	  }
 
-	  showScreen("review-screen");
+	  const items = [];
+	  Array.from(seenSet).forEach(key => {
+		const [ar, en] = key.split("::");
+		const isSentence = store.sentences.some(s => s.ar === ar && s.en === en);
+
+		if (type === "sentences" && isSentence) {
+		  items.push(`<div class="option-card"><b>${ar}</b> — ${en}</div>`);
+		}
+		if (type === "vocab" && !isSentence) {
+		  items.push(`<div class="option-card"><b>${ar}</b> — ${en}</div>`);
+		}
+	  });
+
+	  if (items.length === 0) {
+		listDiv.innerHTML = `<p class='hint'>No ${type} learned yet.</p>`;
+	  } else {
+		listDiv.innerHTML = items.join("");
+	  }
 	}
 
 	function confirmBack() {
@@ -731,5 +753,4 @@ function renderQuestion() {
 		</div>
 	</body>
 </html>
-
 
