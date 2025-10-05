@@ -591,14 +591,28 @@ function renderQuestion() {
     function keyItem(x) { return `${x.ar || ''}::${x.en || ''}`; }
 
     // Distractors for vocab — choose from same category when possible, else cross-category
-    function makeDistractors(field, correct, cat) {
-      const source = [
-        ...(store.vocab[cat] || []),
-        ...store.vocab.foods, ...store.vocab.activities, ...store.vocab.places, ...store.vocab.objects,   ...store.vocab.bodyparts, ...store.vocab.vehicles
-      ];
-      const pool = source.map(x => field === "en" ? x.en : x.ar).filter(v => v && v !== correct);
-      return uniqueSample(pool, 6);
-    }
+	function makeDistractors(field, correct, cat) {
+	  let source;
+	  if (cat === 'random') {
+		// Pull from all vocab categories
+		source = [
+		  ...store.vocab.foods,
+		  ...store.vocab.activities,
+		  ...store.vocab.places,
+		  ...store.vocab.objects,
+		  ...store.vocab.bodyparts,
+		  ...store.vocab.vehicles
+		];
+	  } else {
+		// Only from the current category
+		source = store.vocab[cat] || [];
+	  }
+
+	  const pool = source
+		.map(x => field === "en" ? x.en : x.ar)
+		.filter(v => v && v !== correct);
+	  return uniqueSample(pool, 6);
+	}
     // Distractors for sentences — mix across all sentences, then fallback to simple templates
     function makeSentenceDistractors(field, correct) {
       const base = store.sentences.map(x => field === "en" ? x.en : x.ar).filter(v => v && v !== correct);
