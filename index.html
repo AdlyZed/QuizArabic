@@ -445,40 +445,80 @@ function renderQuestion() {
 
   if (currentLevel === 1) {
     if (direction === "normal") {
+      // Arabic prompt → English answers
       promptHtml = `<div class="prompt">What does this word mean?</div>
                     <div class="arabic">${q.ar}</div>
                     <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
       correctText = q.en;
       distractors = makeDistractors("en", q.en, q.cat);
+      const options = makeOptions(correctText, distractors, 4, "en", q.cat);
+
+      quizDiv.innerHTML = `
+        ${promptHtml}
+        <div class="options" id="options-wrap">
+          ${options.map(opt => `<div class="option-card" data-value="${escapeHtml(opt)}">${escapeHtml(opt)}</div>`).join('')}
+        </div>
+      `;
     } else {
+      // English prompt → Arabic answers
       promptHtml = `<div class="prompt">Choose the correct Arabic for:</div>
                     <div class="arabic" style="font-size:1.2rem;">${q.en}</div>`;
       correctText = q.ar;
       distractors = makeDistractors("ar", q.ar, q.cat);
+      const options = makeOptions(correctText, distractors, 4, "ar", q.cat);
+
+      quizDiv.innerHTML = `
+        ${promptHtml}
+        <div class="options" id="options-wrap">
+          ${options.map(opt => `
+            <div class="option-card" data-value="${escapeHtml(opt.ar)}">
+              <div class="arabic">${escapeHtml(opt.ar)}</div>
+              <div class="translit"><em>${escapeHtml(opt.translit || '')}</em></div>
+            </div>`).join('')}
+        </div>
+      `;
     }
   } else {
     if (direction === "normal") {
+      // Arabic sentence → English answers
       promptHtml = `<div class="prompt">What does this sentence mean?</div>
                     <div class="arabic">${q.ar}</div>
                     <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
       correctText = q.en;
       distractors = makeSentenceDistractors("en", q.en);
+      const options = makeOptions(correctText, distractors);
+
+      quizDiv.innerHTML = `
+        ${promptHtml}
+        <div class="options" id="options-wrap">
+          ${options.map(opt => `<div class="option-card" data-value="${escapeHtml(opt)}">${escapeHtml(opt)}</div>`).join('')}
+        </div>
+      `;
     } else {
+      // English sentence → Arabic answers (with translit)
       promptHtml = `<div class="prompt">Choose the correct Arabic sentence for:</div>
                     <div class="arabic" style="font-size:1.2rem;">${q.en}</div>`;
       correctText = q.ar;
       distractors = makeSentenceDistractors("ar", q.ar);
+      const options = makeOptions(correctText, distractors, 4, "ar");
+
+      quizDiv.innerHTML = `
+        ${promptHtml}
+        <div class="options" id="options-wrap">
+          ${options.map(opt => {
+            if (typeof opt === "object") {
+              return `<div class="option-card" data-value="${escapeHtml(opt.ar)}">
+                        <div class="arabic">${escapeHtml(opt.ar)}</div>
+                        <div class="translit"><em>${escapeHtml(opt.translit || '')}</em></div>
+                      </div>`;
+            } else {
+              return `<div class="option-card" data-value="${escapeHtml(opt)}">${escapeHtml(opt)}</div>`;
+            }
+          }).join('')}
+        </div>
+      `;
     }
   }
-
-  const options = makeOptions(correctText, distractors);
-
-  quizDiv.innerHTML = `
-    ${promptHtml}
-    <div class="options" id="options-wrap">
-      ${options.map(opt => `<div class="option-card" data-value="${escapeHtml(opt)}">${escapeHtml(opt)}</div>`).join('')}
-    </div>
-  `;
 
   // Attach listeners safely
   document.querySelectorAll('#options-wrap .option-card').forEach(card => {
@@ -572,12 +612,26 @@ function renderQuestion() {
 	}
 
     // Helpers
-	function makeOptions(correct, pool, count = 4) {
-		const filtered = pool.filter(x => x && x !== correct);
-		const picks = shuffle(filtered).slice(0, count - 1);
-		const all = [correct, ...picks];
-	return shuffle(all);
-}
+	function makeOptions(correct, pool, count = 4, field = "en", cat = null) {
+	  const filtered = pool.filter(x => x && (field === "en" ? x : x) !== correct);
+	  const picks = shuffle(filtered).slice(0, count - 1);
+	  const all = [correct, ...picks];
+
+	  if (field === "ar") {
+		// Return objects with Arabic + translit
+		return shuffle(all.map(val => {
+		  let item = null;
+		  if (cat && store.vocab[cat]) {
+			item = store.vocab[cat].find(x => x.ar === val);
+		  } else {
+			item = Object.values(store.vocab).flat().find(x => x.ar === val);
+		  }
+		  return { ar: val, translit: item ? item.translit : "" };
+		}));
+	  } else {
+		return shuffle(all);
+	  }
+	}
 
     function shuffle(arr) {
       const a = [...arr];
