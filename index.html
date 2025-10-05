@@ -556,18 +556,14 @@ function renderQuestion() {
 		}, 900);
 
 	  } else {
-		card.classList.add('wrong');
-		const correctCard = cards.find(c => unescapeHtml(c.dataset.value) === correctText);
-		if (correctCard) correctCard.classList.add('correct');
-		wrong++;
+	    card.classList.add('wrong');
+	    const correctCard = cards.find(c => unescapeHtml(c.dataset.value) === correctText);
+	    if (correctCard) correctCard.classList.add('correct');
+	    wrong++;
 
-		// ❌ Wrong answer → show popup, do NOT advance here
-		let q = currentPool[roundIndex];
-		if (q.ar === correctText) {
-		  showWrongModal({ ar: q.ar, translit: q.translit, en: q.en });
-		} else {
-		  showWrongModal({ en: correctText });
-		}
+	    // ❌ Wrong answer → show popup with full info
+	    let q = currentPool[roundIndex];
+	    showWrongModal(q);   // pass the full object
 	  }
 
 	  // Mark seen
@@ -641,15 +637,11 @@ function renderQuestion() {
 	function showWrongModal(correctAnswer) {
 	  const container = document.getElementById("wrong-answer-text");
 
-	  if (correctAnswer.ar) {
-		container.innerHTML = `
-		  <div class="arabic">${escapeHtml(correctAnswer.ar)}</div>
-		  <div class="translit"><em>${escapeHtml(correctAnswer.translit || '')}</em></div>
-		  <p class="hint">Meaning: ${escapeHtml(correctAnswer.en || '')}</p>
-		`;
-	  } else {
-		container.innerHTML = `<p class="hint">Answer: ${escapeHtml(correctAnswer.en)}</p>`;
-	  }
+	  container.innerHTML = `
+		<div class="arabic">${escapeHtml(correctAnswer.ar || '')}</div>
+		<div class="translit"><em>${escapeHtml(correctAnswer.translit || '')}</em></div>
+		<p class="hint">Meaning: ${escapeHtml(correctAnswer.en || '')}</p>
+	  `;
 
 	  document.getElementById("wrong-modal").classList.add("active");
 	}
@@ -657,7 +649,6 @@ function renderQuestion() {
 	function closeWrongModal() {
 	  document.getElementById("wrong-modal").classList.remove("active");
 
-	  // Advance to next question now
 	  roundIndex++;
 	  if (roundIndex >= roundSize) {
 		showRoundup();
