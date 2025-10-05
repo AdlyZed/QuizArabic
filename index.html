@@ -91,6 +91,22 @@
      margin-top: 10px;
     font-style: italic;
 	}
+	.modal {
+	  position: fixed;
+	  top: 0; left: 0; right: 0; bottom: 0;
+	  background: rgba(0,0,0,0.6);
+	  display: none;
+	  justify-content: center;
+	  align-items: center;
+	  z-index: 999;
+	}
+	.modal.active { display: flex; }
+
+	.modal-card {
+	  max-width: 400px;
+	  width: 90%;
+	  text-align: center;
+	}
   </style>
 </head>
 <body>
@@ -101,6 +117,7 @@
       <div class="row">
         <button class="btn" onclick="chooseLevel(1)">Level 1: Vocabulary</button>
         <button class="btn" onclick="chooseLevel(2)">Level 2: Sentences</button>
+		<button class="btn" onclick="showReview()">📖 Review Learned Words</button>
       </div>
       <div class="status">
         <span class="pill" id="net-status">Network: checking…</span>
@@ -120,6 +137,7 @@
         <button class="btn" onclick="chooseCategory('activities')">Activities</button>
         <button class="btn" onclick="chooseCategory('places')">Places</button>
         <button class="btn" onclick="chooseCategory('objects')">Objects</button>
+		<button class="btn" onclick="chooseCategory('bodyparts')">Body Parts</button>
         <button class="btn" onclick="chooseCategory('random')">Random mix</button>
       </div>
       <div class="status">
@@ -138,6 +156,9 @@
         <span class="pill" id="progress">Question 1 / 20</span>
         <span class="pill" id="score-pill">✅ 0 | ❌ 0</span>
       </div>
+	  <div class="row" style="margin-top:10px;">
+		<button class="btn" onclick="confirmBack()">⬅ Back</button>
+	  </div>
     </div>
   </div>
 
@@ -153,6 +174,17 @@
         <button class="btn" onclick="quit()">Quit</button>
       </div>
       <p class="hint">You can refresh content on the Level screen to fetch new words and sentences.</p>
+    </div>
+  </div>
+
+  <!-- Review Learned Words -->
+  <div id="review-screen" class="screen">
+    <div class="card">
+      <h2>Learned Words</h2>
+      <div id="review-list"></div>
+      <div class="row">
+        <button class="btn" onclick="showScreen('level-screen')">⬅ Back to Levels</button>
+      </div>
     </div>
   </div>
 
@@ -184,7 +216,19 @@
         { ar:"قَمر", en:"Moon", translit:"qamar" },
         { ar:"شَجَرة", en:"Tree", translit:"shajara" },
         { ar:"قَلب", en:"Heart", translit:"qalb" }
-      ]
+      ],
+	  bodyparts: [
+		  { ar:"رأس", en:"Head", translit:"raʾs" },
+		  { ar:"عين", en:"Eye", translit:"ʿayn" },
+		  { ar:"أذن", en:"Ear", translit:"udhun" },
+		  { ar:"أنف", en:"Nose", translit:"anf" },
+		  { ar:"فم", en:"Mouth", translit:"fam" },
+		  { ar:"يد", en:"Hand", translit:"yad" },
+		  { ar:"ذراع", en:"Arm", translit:"dhirāʿ" },
+		  { ar:"رجل", en:"Leg", translit:"rijl" },
+		  { ar:"قدم", en:"Foot", translit:"qadam" },
+		  { ar:"قلب", en:"Heart", translit:"qalb" }
+	  ]
     };
     const seedSentences = [
       { ar:"أنا أقرأ كتابًا", en:"I am reading a book", translit:"anā aqraʾ kitāban" },
@@ -245,15 +289,16 @@
         // }
         if (json && json.vocab && json.sentences) {
           // Merge: internet items first, then seeds
-          store = {
-            vocab: {
-              foods: mergeUnique(json.vocab.foods || [], seedVocab.foods),
-              activities: mergeUnique(json.vocab.activities || [], seedVocab.activities),
-              places: mergeUnique(json.vocab.places || [], seedVocab.places),
-              objects: mergeUnique(json.vocab.objects || [], seedVocab.objects)
-            },
-            sentences: mergeUnique(json.sentences || [], seedSentences)
-          };
+		  store = {
+		    vocab: {
+			  foods: mergeUnique(json.vocab.foods || [], seedVocab.foods),
+			  activities: mergeUnique(json.vocab.activities || [], seedVocab.activities),
+			  places: mergeUnique(json.vocab.places || [], seedVocab.places),
+			  objects: mergeUnique(json.vocab.objects || [], seedVocab.objects),
+			  bodyparts: mergeUnique(json.vocab.bodyparts || [], seedVocab.bodyparts)
+		    },
+		    sentences: mergeUnique(json.sentences || [], seedSentences)
+		  };
           localStorage.setItem(LS_CONTENT, JSON.stringify(store));
           netAvailable = true;
         } else {
@@ -478,6 +523,35 @@ function renderQuestion() {
       // Simple quit: back to Level screen (you can close the tab manually if needed)
       showScreen('level-screen');
     }
+	function showReview() {
+	  const listDiv = document.getElementById("review-list");
+	  listDiv.innerHTML = "";
+
+	  if (seenSet.size === 0) {
+		listDiv.innerHTML = "<p class='hint'>No words learned yet.</p>";
+	  } else {
+		const items = Array.from(seenSet).map(key => {
+		  const [ar, en] = key.split("::");
+		  return `<div class="option-card"><b>${ar}</b> — ${en}</div>`;
+		});
+		listDiv.innerHTML = items.join("");
+	  }
+
+	  showScreen("review-screen");
+	}
+
+	function confirmBack() {
+	  document.getElementById("back-modal").classList.add("active");
+	}
+
+	function closeBackModal() {
+	  document.getElementById("back-modal").classList.remove("active");
+	}
+
+	function doBack() {
+	  closeBackModal();
+	  showScreen('level-screen');
+	}
 
     // Helpers
 	function makeOptions(correct, pool, count = 4) {
@@ -543,6 +617,18 @@ function renderQuestion() {
 		.catch(err => console.log("SW registration failed:", err));
 	}
   </script>
-</body>
+	  <!-- Back Confirmation Modal -->
+		<div id="back-modal" class="modal">
+		  <div class="card modal-card">
+			<h2>Leave Quiz?</h2>
+			<p class="hint">Your current progress will be lost if you go back.</p>
+			<div class="row" style="margin-top:10px;">
+			  <button class="btn" onclick="closeBackModal()">Cancel</button>
+			  <button class="btn" onclick="doBack()">Yes, go back</button>
+			</div>
+		  </div>
+		</div>
+	</body>
 </html>
+
 
