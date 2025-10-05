@@ -543,12 +543,31 @@ function renderQuestion() {
 	  if (chosen === correctText) {
 		card.classList.add('correct');
 		correct++;
+
+		// ✅ Auto-advance only for correct answers
+		setTimeout(() => {
+		  roundIndex++;
+		  if (roundIndex >= roundSize) {
+			showRoundup();
+		  } else {
+			renderQuestion();
+			updateStatus();
+		  }
+		}, 900);
+
 	  } else {
 		card.classList.add('wrong');
-		// ✅ Use dataset.value instead of textContent
 		const correctCard = cards.find(c => unescapeHtml(c.dataset.value) === correctText);
 		if (correctCard) correctCard.classList.add('correct');
 		wrong++;
+
+		// ❌ Wrong answer → show popup, do NOT advance here
+		let q = currentPool[roundIndex];
+		if (q.ar === correctText) {
+		  showWrongModal({ ar: q.ar, translit: q.translit, en: q.en });
+		} else {
+		  showWrongModal({ en: correctText });
+		}
 	  }
 
 	  // Mark seen
@@ -557,16 +576,6 @@ function renderQuestion() {
 		seenSet.add(keyItem(q));
 		localStorage.setItem(LS_SEEN, JSON.stringify(Array.from(seenSet)));
 	  }
-
-	  setTimeout(() => {
-		roundIndex++;
-		if (roundIndex >= roundSize) {
-		  showRoundup();
-		} else {
-		  renderQuestion();
-		  updateStatus();
-		}
-	  }, 900);
 	}
 
     function updateStatus() {
@@ -627,6 +636,35 @@ function renderQuestion() {
 
 	function closeBackModal() {
 	  document.getElementById("back-modal").classList.remove("active");
+	}
+
+	function showWrongModal(correctAnswer) {
+	  const container = document.getElementById("wrong-answer-text");
+
+	  if (correctAnswer.ar) {
+		container.innerHTML = `
+		  <div class="arabic">${escapeHtml(correctAnswer.ar)}</div>
+		  <div class="translit"><em>${escapeHtml(correctAnswer.translit || '')}</em></div>
+		  <p class="hint">Meaning: ${escapeHtml(correctAnswer.en || '')}</p>
+		`;
+	  } else {
+		container.innerHTML = `<p class="hint">Answer: ${escapeHtml(correctAnswer.en)}</p>`;
+	  }
+
+	  document.getElementById("wrong-modal").classList.add("active");
+	}
+
+	function closeWrongModal() {
+	  document.getElementById("wrong-modal").classList.remove("active");
+
+	  // Advance to next question now
+	  roundIndex++;
+	  if (roundIndex >= roundSize) {
+		showRoundup();
+	  } else {
+		renderQuestion();
+		updateStatus();
+	  }
 	}
 
 	function doBack() {
@@ -748,6 +786,17 @@ function renderQuestion() {
 			<div class="row" style="margin-top:10px;">
 			  <button class="btn" onclick="closeBackModal()">Cancel</button>
 			  <button class="btn" onclick="doBack()">Yes, go back</button>
+			</div>
+		  </div>
+		</div>
+		
+		<!-- Wrong Answer Modal -->
+		<div id="wrong-modal" class="modal">
+		  <div class="card modal-card">
+			<h2 style="color:var(--red);">❌ Wrong Answer!</h2>
+			<div id="wrong-answer-text" style="margin-top:8px;"></div>
+			<div class="row" style="margin-top:10px;">
+			  <button class="btn" onclick="closeWrongModal()">OK</button>
 			</div>
 		  </div>
 		</div>
