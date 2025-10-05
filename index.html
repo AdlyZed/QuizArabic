@@ -138,6 +138,7 @@
         <button class="btn" onclick="chooseCategory('places')">Places</button>
         <button class="btn" onclick="chooseCategory('objects')">Objects</button>
 		<button class="btn" onclick="chooseCategory('bodyparts')">Body Parts</button>
+		<button class="btn" onclick="chooseCategory('vehicles')">Vehicles</button>
         <button class="btn" onclick="chooseCategory('random')">Random mix</button>
       </div>
       <div class="status">
@@ -228,6 +229,16 @@
 		  { ar:"رجل", en:"Leg", translit:"rijl" },
 		  { ar:"قدم", en:"Foot", translit:"qadam" },
 		  { ar:"قلب", en:"Heart", translit:"qalb" }
+	  ],
+	  vehicles: [
+		  { ar:"سَيّارة", en:"Car", translit:"sayyārah" },
+		  { ar:"دَرّاجة ناريّة", en:"Motorcycle", translit:"darrājah nāriyyah" },
+		  { ar:"دَرّاجة", en:"Bicycle", translit:"darrājah" },
+		  { ar:"شاحِنة", en:"Lorry / Truck", translit:"shāḥinah" },
+		  { ar:"عَبّارة", en:"Ferry", translit:"ʿabbārah" },
+		  { ar:"طائِرة", en:"Airplane", translit:"ṭāʾirah" },
+		  { ar:"مِروحيّة", en:"Helicopter", translit:"mirwaḥiyyah" },
+		  { ar:"قِطار", en:"Train", translit:"qiṭār" }
 	  ]
     };
     const seedSentences = [
@@ -284,7 +295,7 @@
         const json = await res.json();
         // Expected schema:
         // {
-        //   "vocab": { "foods":[{ar,en,translit},...], "activities":[...], "places":[...], "objects":[...] },
+        //   "vocab": { "foods":[{ar,en,translit},...], "activities":[...], "places":[...], "objects":[...], "bodyparts":[...], "vehicles":[...] },
         //   "sentences": [{ar,en,translit}, ...]
         // }
         if (json && json.vocab && json.sentences) {
@@ -295,7 +306,8 @@
 			  activities: mergeUnique(json.vocab.activities || [], seedVocab.activities),
 			  places: mergeUnique(json.vocab.places || [], seedVocab.places),
 			  objects: mergeUnique(json.vocab.objects || [], seedVocab.objects),
-			  bodyparts: mergeUnique(json.vocab.bodyparts || [], seedVocab.bodyparts)
+			  bodyparts: mergeUnique(json.vocab.bodyparts || [], seedVocab.bodyparts),
+			  vehicles: mergeUnique(json.vocab.vehicles || [], seedVocab.vehicles)
 		    },
 		    sentences: mergeUnique(json.sentences || [], seedSentences)
 		  };
@@ -333,6 +345,8 @@
         store.vocab.activities.length +
         store.vocab.places.length +
         store.vocab.objects.length +
+		store.vocab.bodyparts.length +
+		store.vocab.vehicles.length +
         store.sentences.length
       );
       const newCount = seedCount - (
@@ -340,6 +354,8 @@
         seedVocab.activities.length +
         seedVocab.places.length +
         seedVocab.objects.length +
+		store.vocab.bodyparts.length +
+		store.vocab.vehicles.length +
         seedSentences.length
       );
       document.getElementById("seed-count").textContent = `Loaded items: ${seedCount}`;
@@ -391,7 +407,9 @@
             ...store.vocab.foods.map(x => ({...x, cat:'foods'})),
             ...store.vocab.activities.map(x => ({...x, cat:'activities'})),
             ...store.vocab.places.map(x => ({...x, cat:'places'})),
-            ...store.vocab.objects.map(x => ({...x, cat:'objects'}))
+            ...store.vocab.objects.map(x => ({...x, cat:'objects'})),
+			...store.vocab.bodyparts.map(x => ({...x, cat:'bodyparts'})),
+			...store.vocab.vehicles.map(x => ({...x, cat:'vehicles'}))
           ];
         } else {
           source = store.vocab[currentCategory].map(x => ({...x, cat: currentCategory}));
@@ -576,7 +594,7 @@ function renderQuestion() {
     function makeDistractors(field, correct, cat) {
       const source = [
         ...(store.vocab[cat] || []),
-        ...store.vocab.foods, ...store.vocab.activities, ...store.vocab.places, ...store.vocab.objects
+        ...store.vocab.foods, ...store.vocab.activities, ...store.vocab.places, ...store.vocab.objects,   ...store.vocab.bodyparts, ...store.vocab.vehicles
       ];
       const pool = source.map(x => field === "en" ? x.en : x.ar).filter(v => v && v !== correct);
       return uniqueSample(pool, 6);
