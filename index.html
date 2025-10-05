@@ -157,6 +157,9 @@
         <span class="pill" id="progress">Question 1 / 20</span>
         <span class="pill" id="score-pill">✅ 0 | ❌ 0</span>
       </div>
+      <div id="progress-bar" style="height:8px;background:#26264a;border-radius:4px;overflow:hidden;margin-top:6px;">
+        <div id="progress-fill" style="height:100%;width:0%;background:var(--accent);transition:width 0.3s;"></div>
+      </div>
 	  <div class="row" style="margin-top:10px;">
 		<button class="btn" onclick="confirmBack()">⬅ Back</button>
 	  </div>
@@ -167,7 +170,7 @@
   <div id="roundup-screen" class="screen">
     <div class="card">
       <h2>Round up</h2>
-      <p id="roundup-summary" style="text-align:center;"></p>
+      <p id="roundup-summary" style="text-align:center;"></p><div id="mistake-list" style="margin-top:12px;"></div>
       <div class="row">
         <button class="btn" onclick="continueSame()">Continue same</button>
         <button class="btn" onclick="showScreen('category-screen')">Pick category</button>
@@ -260,6 +263,7 @@
     let roundIndex = 0;
     let correct = 0;
     let wrong = 0;
+	let mistakes = [];
     const roundSize = 20;
     let currentPool = []; // questions for this round
 
@@ -354,14 +358,14 @@
         store.sentences.length
       );
       const newCount = seedCount - (
-        seedVocab.foods.length +
-        seedVocab.activities.length +
-        seedVocab.places.length +
-        seedVocab.objects.length +
-		store.vocab.bodyparts.length +
-		store.vocab.vehicles.length +
-        seedSentences.length
-      );
+	  seedVocab.foods.length +
+	  seedVocab.activities.length +
+	  seedVocab.places.length +
+	  seedVocab.objects.length +
+	  seedVocab.bodyparts.length +   // fixed
+	  seedVocab.vehicles.length +    // fixed
+	  seedSentences.length
+	);
       document.getElementById("seed-count").textContent = `Loaded items: ${seedCount}`;
       document.getElementById("new-count").textContent = `New items: ${Math.max(0, newCount)}`;
     }
@@ -391,16 +395,16 @@
       currentCategory = cat;
       startRound();
     }
-    function startRound() {
-      correct = 0; wrong = 0; roundIndex = 0;
-      buildPool();
-      document.getElementById("quiz-title").textContent = currentLevel === 1
-        ? `Vocabulary — ${currentCategory === 'random' ? 'Random mix' : capitalize(currentCategory)}`
-        : "Sentences";
-      showScreen('quiz-screen');
-      renderQuestion();
-      updateStatus();
-    }
+	function startRound() {
+	  correct = 0; wrong = 0; roundIndex = 0; mistakes = []; // reset mistakes
+	  buildPool();
+	  document.getElementById("quiz-title").textContent = currentLevel === 1
+		? `Vocabulary — ${currentCategory === 'random' ? 'Random mix' : capitalize(currentCategory)}`
+		: "Sentences";
+	  showScreen('quiz-screen');
+	  renderQuestion();
+	  updateStatus();
+	}
 
     function buildPool() {
       const pool = [];
@@ -451,7 +455,9 @@ function renderQuestion() {
     if (direction === "normal") {
       // Arabic prompt → English answers
       promptHtml = `<div class="prompt">What does this word mean?</div>
-                    <div class="arabic">${q.ar}</div>
+                    <div class="arabic">${q.ar} 
+                      <button class="btn" style="width:auto;padding:4px 8px;font-size:0.8rem;" onclick="speakArabic('${q.ar}')">🔊</button>
+                    </div>
                     <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
       correctText = q.en;
       distractors = makeDistractors("en", q.en, q.cat);
@@ -476,8 +482,10 @@ function renderQuestion() {
         <div class="options" id="options-wrap">
           ${options.map(opt => `
             <div class="option-card" data-value="${escapeHtml(opt.ar)}">
-              <div class="arabic">${escapeHtml(opt.ar)}</div>
-              <div class="translit"><em>${escapeHtml(opt.translit || '')}</em></div>
+              <div class="arabic">${escapeHtml(opt.ar)} 
+				  <button class="btn" style="width:auto;padding:2px 6px;font-size:0.7rem;" onclick="speakArabic('${opt.ar}')">🔊</button>
+				</div>
+				<div class="translit"><em>${escapeHtml(opt.translit || '')}</em></div>
             </div>`).join('')}
         </div>
       `;
@@ -485,9 +493,11 @@ function renderQuestion() {
   } else {
     if (direction === "normal") {
       // Arabic sentence → English answers
-      promptHtml = `<div class="prompt">What does this sentence mean?</div>
-                    <div class="arabic">${q.ar}</div>
-                    <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
+	  promptHtml = `<div class="prompt">What does this sentence mean?</div>
+				    <div class="arabic">${q.ar} 
+					  <button class="btn" style="width:auto;padding:4px 8px;font-size:0.8rem;" onclick="speakArabic('${q.ar}')">🔊</button>
+				    </div>
+				    <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
       correctText = q.en;
       distractors = makeSentenceDistractors("en", q.en);
       const options = makeOptions(correctText, distractors);
@@ -512,8 +522,10 @@ function renderQuestion() {
           ${options.map(opt => {
             if (typeof opt === "object") {
               return `<div class="option-card" data-value="${escapeHtml(opt.ar)}">
-                        <div class="arabic">${escapeHtml(opt.ar)}</div>
-                        <div class="translit"><em>${escapeHtml(opt.translit || '')}</em></div>
+                        <div class="arabic">${escapeHtml(opt.ar)} 
+						  <button class="btn" style="width:auto;padding:2px 6px;font-size:0.7rem;" onclick="speakArabic('${opt.ar}')">🔊</button>
+						</div>
+						<div class="translit"><em>${escapeHtml(opt.translit || '')}</em></div>
                       </div>`;
             } else {
               return `<div class="option-card" data-value="${escapeHtml(opt)}">${escapeHtml(opt)}</div>`;
@@ -561,9 +573,10 @@ function renderQuestion() {
 	    if (correctCard) correctCard.classList.add('correct');
 	    wrong++;
 
-	    // ❌ Wrong answer → show popup with full info
+	    // ❌ Wrong answer → record and show popup
 	    let q = currentPool[roundIndex];
-	    showWrongModal(q);   // pass the full object
+	    mistakes.push(q);            // <<< add this line
+	    showWrongModal(q);           // pass the full object
 	  }
 
 	  // Mark seen
@@ -574,15 +587,39 @@ function renderQuestion() {
 	  }
 	}
 
+	function speakArabic(text) {
+	  if (!('speechSynthesis' in window)) return;
+	  const utter = new SpeechSynthesisUtterance(text);
+	  utter.lang = "ar-SA"; // Arabic voice
+	  speechSynthesis.speak(utter);
+	}
+	
     function updateStatus() {
       document.getElementById("progress").textContent = `Question ${roundIndex + 1} / ${roundSize}`;
       document.getElementById("score-pill").textContent = `✅ ${correct} | ❌ ${wrong}`;
+      const percent = ((roundIndex + 1) / roundSize) * 100;
+      document.getElementById("progress-fill").style.width = percent + "%";
     }
 
     function showRoundup() {
-      showScreen('roundup-screen');
-      document.getElementById("roundup-summary").textContent = `Correct: ${correct} | Wrong: ${wrong}`;
-    }
+	  showScreen('roundup-screen');
+	  document.getElementById("roundup-summary").textContent = `Correct: ${correct} | Wrong: ${wrong}`;
+
+	  const listDiv = document.getElementById("mistake-list");
+	  if (mistakes.length === 0) {
+		listDiv.innerHTML = "<p class='hint'>No mistakes this round 🎉</p>";
+	  } else {
+		listDiv.innerHTML = mistakes.map(m => `
+		  <div class="option-card">
+			<div class="arabic">${escapeHtml(m.ar)} 
+			  <button class="btn" style="width:auto;padding:2px 6px;font-size:0.7rem;" onclick="speakArabic('${m.ar}')">🔊</button>
+			</div>
+			<div class="translit"><em>${escapeHtml(m.translit || '')}</em></div>
+			<p class="hint">Meaning: ${escapeHtml(m.en)}</p>
+		  </div>
+		`).join("");
+	  }
+	}
 
     function continueSame() {
       startRound();
@@ -634,17 +671,19 @@ function renderQuestion() {
 	  document.getElementById("back-modal").classList.remove("active");
 	}
 
-	function showWrongModal(correctAnswer) {
-	  const container = document.getElementById("wrong-answer-text");
+    function showWrongModal(correctAnswer) {
+      const container = document.getElementById("wrong-answer-text");
 
-	  container.innerHTML = `
-		<div class="arabic">${escapeHtml(correctAnswer.ar || '')}</div>
-		<div class="translit"><em>${escapeHtml(correctAnswer.translit || '')}</em></div>
-		<p class="hint">Meaning: ${escapeHtml(correctAnswer.en || '')}</p>
-	  `;
+      container.innerHTML = `
+        <div class="arabic">${escapeHtml(correctAnswer.ar || '')}
+          <button class="btn" style="width:auto;padding:4px 8px;font-size:0.8rem;" onclick="speakArabic('${correctAnswer.ar || ''}')">🔊</button>
+        </div>
+        <div class="translit"><em>${escapeHtml(correctAnswer.translit || '')}</em></div>
+        <p class="hint">Meaning: ${escapeHtml(correctAnswer.en || correctAnswer)}</p>
+      `;
 
-	  document.getElementById("wrong-modal").classList.add("active");
-	}
+      document.getElementById("wrong-modal").classList.add("active");
+    }
 
 	function closeWrongModal() {
 	  document.getElementById("wrong-modal").classList.remove("active");
