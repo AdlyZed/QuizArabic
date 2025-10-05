@@ -529,40 +529,41 @@ function renderQuestion() {
 }
 
 
-    function checkAnswer(card, chosenEsc, correctEsc) {
-      const chosen = unescapeHtml(chosenEsc);
-      const correctText = unescapeHtml(correctEsc);
-      const optionsWrap = document.getElementById('options-wrap');
-      const cards = Array.from(optionsWrap.querySelectorAll('.option-card'));
-      optionsWrap.classList.add('disabled');
+	function checkAnswer(card, chosenEsc, correctEsc) {
+	  const chosen = unescapeHtml(chosenEsc);
+	  const correctText = unescapeHtml(correctEsc);
+	  const optionsWrap = document.getElementById('options-wrap');
+	  const cards = Array.from(optionsWrap.querySelectorAll('.option-card'));
+	  optionsWrap.classList.add('disabled');
 
-      if (chosen === correctText) {
-        card.classList.add('correct');
-        correct++;
-      } else {
-        card.classList.add('wrong');
-        const correctCard = cards.find(c => c.textContent === correctText);
-        if (correctCard) correctCard.classList.add('correct');
-        wrong++;
-      }
+	  if (chosen === correctText) {
+		card.classList.add('correct');
+		correct++;
+	  } else {
+		card.classList.add('wrong');
+		// ✅ Use dataset.value instead of textContent
+		const correctCard = cards.find(c => unescapeHtml(c.dataset.value) === correctText);
+		if (correctCard) correctCard.classList.add('correct');
+		wrong++;
+	  }
 
-      // Mark seen
-      const q = currentPool[roundIndex];
-      if (q) {
-        seenSet.add(keyItem(q));
-        localStorage.setItem(LS_SEEN, JSON.stringify(Array.from(seenSet)));
-      }
+	  // Mark seen
+	  const q = currentPool[roundIndex];
+	  if (q) {
+		seenSet.add(keyItem(q));
+		localStorage.setItem(LS_SEEN, JSON.stringify(Array.from(seenSet)));
+	  }
 
-      setTimeout(() => {
-        roundIndex++;
-        if (roundIndex >= roundSize) {
-          showRoundup();
-        } else {
-          renderQuestion();
-          updateStatus();
-        }
-      }, 900);
-    }
+	  setTimeout(() => {
+		roundIndex++;
+		if (roundIndex >= roundSize) {
+		  showRoundup();
+		} else {
+		  renderQuestion();
+		  updateStatus();
+		}
+	  }, 900);
+	}
 
     function updateStatus() {
       document.getElementById("progress").textContent = `Question ${roundIndex + 1} / ${roundSize}`;
