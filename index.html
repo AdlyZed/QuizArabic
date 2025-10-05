@@ -614,18 +614,23 @@ function renderQuestion() {
 
     // Helpers
 	function makeOptions(correct, pool, count = 4, field = "en", cat = null) {
-	  const filtered = pool.filter(x => x && (field === "en" ? x : x) !== correct);
+	  const filtered = pool.filter(x => {
+		if (field === "en") return x !== correct;
+		if (field === "ar") return (x.ar || x) !== correct;
+	  });
 	  const picks = shuffle(filtered).slice(0, count - 1);
 	  const all = [correct, ...picks];
 
 	  if (field === "ar") {
-		// Return objects with Arabic + translit
 		return shuffle(all.map(val => {
+		  if (typeof val === "object") return val; // already {ar, translit}
+		  // Look up translit from vocab or sentences
 		  let item = null;
 		  if (cat && store.vocab[cat]) {
 			item = store.vocab[cat].find(x => x.ar === val);
 		  } else {
-			item = Object.values(store.vocab).flat().find(x => x.ar === val);
+			item = Object.values(store.vocab).flat().find(x => x.ar === val) ||
+				   store.sentences.find(x => x.ar === val);
 		  }
 		  return { ar: val, translit: item ? item.translit : "" };
 		}));
@@ -669,20 +674,29 @@ function renderQuestion() {
 	  return uniqueSample(pool, 6);
 	}
     // Distractors for sentences — mix across all sentences, then fallback to simple templates
-    function makeSentenceDistractors(field, correct) {
-      const base = store.sentences.map(x => field === "en" ? x.en : x.ar).filter(v => v && v !== correct);
-      const basePick = uniqueSample(base, 6);
-      if (basePick.length >= 3) return basePick.slice(0, 3);
-      // Fallback simple templates (avoid duplicate correct)
-      const extrasEn = [
-        "I am eating bread", "He is running fast", "We are at the market", "She is reading a book"
-      ].filter(v => v !== correct);
-      const extrasAr = [
-        "أنا آكل خبزًا", "هو يركض بسرعة", "نحن في السوق", "هي تقرأ كتابًا"
-      ].filter(v => v !== correct);
-      const extras = field === "en" ? extrasEn : extrasAr;
-      return [...basePick, ...uniqueSample(extras, 3 - basePick.length)];
-    }
+	function makeSentenceDistractors(field, correct) {
+	  if (field === "en") {
+		const base = store.sentences.map(x => x.en).filter(v => v && v !== correct);
+		const basePick = uniqueSample(base, 6);
+		if (basePick.length >= 3) return basePick.slice(0, 3);
+		const extrasEn = [
+		  "I am eating bread", "He is running fast", "We are at the market", "She is reading a book"
+		].filter(v => v !== correct);
+		return [...basePick, ...uniqueSample(extrasEn, 3 - basePick.length)];
+	  } else {
+		// Arabic distractors with translit
+		const base = store.sentences.filter(x => x.ar !== correct);
+		const basePick = uniqueSample(base, 6);
+		if (basePick.length >= 3) return basePick.slice(0, 3);
+		const extrasAr = [
+		  { ar: "أنا آكل خبزًا", translit: "anā ākul khubzan" },
+		  { ar: "هو يركض بسرعة", translit: "huwa yarkuḍ bisurʿah" },
+		  { ar: "نحن في السوق", translit: "naḥnu fī al-sūq" },
+		  { ar: "هي تقرأ كتابًا", translit: "hiya taqraʾ kitāban" }
+		].filter(x => x.ar !== correct);
+		return [...basePick, ...uniqueSample(extrasAr, 3 - basePick.length)];
+	  }
+	}
     function uniqueSample(arr, n) {
       const s = shuffle(Array.from(new Set(arr)));
       return s.slice(0, n);
