@@ -110,29 +110,18 @@
   </style>
 </head>
 <body>
-  <!-- Language selection -->
-  <div id="lang-screen" class="screen active">
-    <div class="card">
-      <h2>Select Language / Pilih Bahasa</h2>
-      <div class="row">
-        <button class="btn" onclick="setLanguage('en')">English</button>
-        <button class="btn" onclick="setLanguage('bm')">Bahasa Melayu</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Level selection -->
-  <div id="level-screen" class="screen">
+  <div id="level-screen" class="screen active">
     <div class="card">
       <h2>Choose level</h2>
       <div class="row">
-        <button class="btn" id="btn-level1" onclick="chooseLevel(1)">Level 1: Vocabulary</button>
-        <button class="btn" id="btn-level2" onclick="chooseLevel(2)">Level 2: Sentences</button>
-        <button class="btn" id="btn-review" onclick="showReview()">📖 Review Learned Words</button>
+        <button class="btn" onclick="chooseLevel(1)">Level 1: Vocabulary</button>
+        <button class="btn" onclick="chooseLevel(2)">Level 2: Sentences</button>
+		<button class="btn" onclick="showReview()">📖 Review Learned Words</button>
       </div>
       <div class="status">
         <span class="pill" id="net-status">Network: checking…</span>
-        <button class="pill" id="btn-refresh" onclick="refreshContent()">Refresh content</button>
+        <button class="pill" onclick="refreshContent()">Refresh content</button>
       </div>
       <p class="hint">Tip: Contact me if you want me to add other thing.</p>
       <p class="trademark">© Made by Adly</p>
@@ -144,13 +133,13 @@
     <div class="card">
       <h2>Choose category</h2>
       <div class="row">
-		<button class="btn" id="btn-foods" onclick="chooseCategory('foods')">Foods</button>
-		<button class="btn" id="btn-activities" onclick="chooseCategory('activities')">Activities</button>
-		<button class="btn" id="btn-places" onclick="chooseCategory('places')">Places</button>
-		<button class="btn" id="btn-objects" onclick="chooseCategory('objects')">Objects</button>
-		<button class="btn" id="btn-bodyparts" onclick="chooseCategory('bodyparts')">Body Parts</button>
-		<button class="btn" id="btn-vehicles" onclick="chooseCategory('vehicles')">Vehicles</button>
-		<button class="btn" id="btn-random" onclick="chooseCategory('random')">Random mix</button>
+        <button class="btn" onclick="chooseCategory('foods')">Foods</button>
+        <button class="btn" onclick="chooseCategory('activities')">Activities</button>
+        <button class="btn" onclick="chooseCategory('places')">Places</button>
+        <button class="btn" onclick="chooseCategory('objects')">Objects</button>
+		<button class="btn" onclick="chooseCategory('bodyparts')">Body Parts</button>
+		<button class="btn" onclick="chooseCategory('vehicles')">Vehicles</button>
+        <button class="btn" onclick="chooseCategory('random')">Random mix</button>
       </div>
       <div class="status">
         <span class="pill" id="seed-count">Loaded items: 0</span>
@@ -202,34 +191,6 @@
 
   <script>
     const dataSourceUrl = "https://AdlyZed.github.io/QuizArabic/arabic_quiz_data.json";
-	// Language state
-	let currentLang = "en"; // default English
-
-	// Online translation function (LibreTranslate demo)
-	async function translateText(text) {
-	  if (currentLang === "en") return text; // no translation needed
-	  try {
-		const res = await fetch("https://translate.argosopentech.com/translate", {
-		  method: "POST",
-		  headers: { 
-			"Content-Type": "application/json",
-			"accept": "application/json"
-		  },
-		  body: JSON.stringify({
-			q: text,
-			source: "en",
-			target: "ms",   // Bahasa Melayu
-			format: "text"
-		  })
-		});
-		const data = await res.json();
-		console.log("Translated:", text, "→", data.translatedText);
-		return data.translatedText || text;
-	  } catch (e) {
-		console.error("Translation failed", e);
-		return text; // fallback
-	  }
-	}
 
     // Local seed fallback (works offline) — keeps the app running even without internet.
     const seedVocab = {
@@ -472,7 +433,7 @@
       currentPool = currentPool.slice(0, roundSize);
     }
 
-async function renderQuestion() {
+function renderQuestion() {
   const q = currentPool[roundIndex];
   if (!q) return;
   const quizDiv = document.getElementById('quiz');
@@ -485,7 +446,7 @@ async function renderQuestion() {
   if (currentLevel === 1) {
     if (direction === "normal") {
       // Arabic prompt → English answers
-      promptHtml = `<div class="prompt">${await translateText("What does this word mean?")}</div>
+      promptHtml = `<div class="prompt">What does this word mean?</div>
                     <div class="arabic">${q.ar}</div>
                     <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
       correctText = q.en;
@@ -500,7 +461,7 @@ async function renderQuestion() {
       `;
     } else {
       // English prompt → Arabic answers
-      promptHtml = `<div class="prompt">${await translateText("Choose the correct Arabic for:")}</div>
+      promptHtml = `<div class="prompt">Choose the correct Arabic for:</div>
                     <div class="arabic" style="font-size:1.2rem;">${q.en}</div>`;
       correctText = q.ar;
       distractors = makeDistractors("ar", q.ar, q.cat);
@@ -520,7 +481,7 @@ async function renderQuestion() {
   } else {
     if (direction === "normal") {
       // Arabic sentence → English answers
-      promptHtml = `<div class="prompt">${await translateText("What does this sentence mean?")}</div>
+      promptHtml = `<div class="prompt">What does this sentence mean?</div>
                     <div class="arabic">${q.ar}</div>
                     <div class="translit">Pronounced: <em>${q.translit || ''}</em></div>`;
       correctText = q.en;
@@ -535,7 +496,7 @@ async function renderQuestion() {
       `;
     } else {
       // English sentence → Arabic answers (with translit)
-      promptHtml = `<div class="prompt">${await translateText("Choose the correct Arabic sentence for:")}</div>
+      promptHtml = `<div class="prompt">Choose the correct Arabic sentence for:</div>
                     <div class="arabic" style="font-size:1.2rem;">${q.en}</div>`;
       correctText = q.ar;
       distractors = makeSentenceDistractors("ar", q.ar);
@@ -756,32 +717,6 @@ async function renderQuestion() {
 		.then(() => console.log("Service Worker registered"))
 		.catch(err => console.log("SW registration failed:", err));
 	}
-	function setLanguage(lang) {
-	  currentLang = lang;
-	  showScreen("level-screen");
-	  applyTranslations();
-	}
-
-	async function applyTranslations() {
-	  console.log("applyTranslations running, currentLang =", currentLang);
-	  // Level screen
-	  document.querySelector("#level-screen h2").textContent = await translateText("Choose level");
-	  document.getElementById("btn-level1").textContent = await translateText("Level 1: Vocabulary");
-	  document.getElementById("btn-level2").textContent = await translateText("Level 2: Sentences");
-	  document.getElementById("btn-review").textContent = "📖 " + await translateText("Review Learned Words");
-	  document.getElementById("btn-refresh").textContent = await translateText("Refresh content");
-	  document.querySelector("#level-screen .hint").textContent = await translateText("Tip: Contact me if you want me to add other thing.");
-
-	  // Category screen
-	  document.querySelector("#category-screen h2").textContent = await translateText("Choose category");
-	  document.getElementById("btn-foods").textContent = await translateText("Foods");
-	  document.getElementById("btn-activities").textContent = await translateText("Activities");
-	  document.getElementById("btn-places").textContent = await translateText("Places");
-	  document.getElementById("btn-objects").textContent = await translateText("Objects");
-	  document.getElementById("btn-bodyparts").textContent = await translateText("Body Parts");
-	  document.getElementById("btn-vehicles").textContent = await translateText("Vehicles");
-	  document.getElementById("btn-random").textContent = await translateText("Random mix");
-	}
   </script>
 	  <!-- Back Confirmation Modal -->
 		<div id="back-modal" class="modal">
@@ -796,6 +731,5 @@ async function renderQuestion() {
 		</div>
 	</body>
 </html>
-
 
 
